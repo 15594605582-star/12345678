@@ -6,6 +6,7 @@ on:
 jobs:
   convert:
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -18,13 +19,21 @@ jobs:
           sudo /tmp/dotnet-install.sh --channel 7.0 --install-dir /usr/share/dotnet
           sudo ln -sf /usr/share/dotnet/dotnet /usr/bin/dotnet
           echo "DOTNET_ROOT=/usr/share/dotnet" >> $GITHUB_ENV
-          ls /usr/share/dotnet/host/fxr
       - name: Install nncase
         run: pip install -q nncase==2.9.0 nncase-kpu==2.9.0 onnx==1.15.0
-      - name: Convert
-        run: python convert_kmodel.py
-      - name: Upload kmodel
+      - name: Convert all variants
+        run: |
+          mkdir -p out
+          ok=0
+          for f in best*.onnx; do
+            [ -f "$f" ] || continue
+            echo "=== converting $f ==="
+            python convert_kmodel.py "$f" "out/${f%.onnx}.kmodel" && ok=1 || echo "FAIL: $f"
+          done
+          echo "ANY_OK=$ok"
+          if [ "$ok" = "0" ]; then exit 1; fi
+      - name: Upload kmodels
         uses: actions/upload-artifact@v4
         with:
           name: color_yolov8n
-          path: color_yolov8n.kmodel
+          path: out/*.kmodel
