@@ -1,7 +1,7 @@
 name: convert-kmodel
 on:
-  workflow_dispatch:   # 手动触发
-  push:                # 也可在推送后自动触发
+  workflow_dispatch:
+  push:
 
 jobs:
   convert:
@@ -11,11 +11,16 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-      - name: Install nncase
+      - name: Install dotnet 7
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq dotnet-sdk-7.0
-          pip install -q nncase==2.9.0 nncase-kpu==2.9.0 onnx==1.15.0
+          wget -q https://dotnet.microsoft.com/download/dotnet/scripts/v1/dotnet-install.sh -O /tmp/dotnet-install.sh
+          chmod +x /tmp/dotnet-install.sh
+          sudo /tmp/dotnet-install.sh --channel 7.0 --install-dir /usr/share/dotnet
+          sudo ln -sf /usr/share/dotnet/dotnet /usr/bin/dotnet
+          echo "DOTNET_ROOT=/usr/share/dotnet" >> $GITHUB_ENV
+          ls /usr/share/dotnet/host/fxr
+      - name: Install nncase
+        run: pip install -q nncase==2.9.0 nncase-kpu==2.9.0 onnx==1.15.0
       - name: Convert
         run: python convert_kmodel.py
       - name: Upload kmodel
