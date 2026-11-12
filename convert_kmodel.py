@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
-# convert_kmodel.py — GitHub Actions / Linux 用转换脚本
-# ONNX → K230 kmodel (nncase 2.9.0 + nncase-kpu 2.9.0)
+# convert_kmodel.py — GitHub Actions 批量转换(参数化)
+# 用法: python convert_kmodel.py <input.onnx> <output.kmodel>
+import sys
 import nncase
 
-ONNX = "best.onnx"
-OUT = "color_yolov8n.kmodel"
+ONNX = sys.argv[1] if len(sys.argv) > 1 else "best.onnx"
+OUT = sys.argv[2] if len(sys.argv) > 2 else "color_yolov8n.kmodel"
 
 co = nncase.CompileOptions()
 co.target = "k230"
@@ -24,10 +25,10 @@ co.dump_dir = "tmp_dump"
 
 compiler = nncase.Compiler(co)
 compiler.import_onnx(ONNX, nncase.ImportOptions())
-print("onnx imported")
+print(ONNX, "imported")
 compiler.compile()
-print("compiled")
+print(ONNX, "compiled")
 data = compiler.gencode_tobytes()
 with open(OUT, "wb") as f:
     f.write(data)
-print("kmodel saved:", OUT, len(data), "bytes")
+print(OUT, "saved", len(data), "bytes")
